@@ -43,7 +43,11 @@ while [ $trial -lt 10 ] ; do
 done
 
 if [ "$INSTALLED" = true ] ; then
-    _run_ibg
+    while true; do
+        _run_ibg
+        _info "• IB Gateway exited. Restarting in 30 seconds ...\n"
+        sleep 30
+    done
 else
     _info "• manager is shutting down due to installation failure.\n"
 fi
