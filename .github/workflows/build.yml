@@ -30,3 +30,24 @@ jobs:
           docker build -f dockerfile -t us-east1-docker.pkg.dev/zindari/docker/ibga:${SHORT_SHA} -t us-east1-docker.pkg.dev/zindari/docker/ibga:latest .
           docker push us-east1-docker.pkg.dev/zindari/docker/ibga:${SHORT_SHA}
           docker push us-east1-docker.pkg.dev/zindari/docker/ibga:latest
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Update gitops image tag
+        env:
+          TAG: ${{ github.sha }}
+          GITOPS_PAT: ${{ secrets.GITOPS_PAT }}
+        run: |
+          SHORT_SHA=${TAG::7}
+          git clone https://x-access-token:${GITOPS_PAT}@github.com/zindari/gitops.git /tmp/gitops
+          cd /tmp/gitops/apps/lyra/overlays/paper
+          kustomize edit set image us-east1-docker.pkg.dev/zindari/docker/ibga:${SHORT_SHA}
+          cd /tmp/gitops
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "chore: update ibga image tag to ${SHORT_SHA}"
+          git push
