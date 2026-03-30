@@ -57,12 +57,17 @@ COPY --from=util_build /tmp/utils/show_text /bin
 COPY --from=jauto_build /tmp/jauto_build/jauto.so /opt
 RUN chmod a+rx /bin/show_text && \
     chmod a+rx /opt/jauto.so
-COPY --from=ibg_download /tmp/ibgateway.sh /home/ibg/ibgateway.sh
-RUN chown ibg:ibg /home/ibg/ibgateway.sh
+COPY --from=ibg_download /tmp/ibgateway.sh /tmp/ibgateway.sh
+# Install IB Gateway at build time — no runtime download or install needed
+RUN cd /home/ibg && \
+    printf '/home/ibg/Jts/ibgateway\n\n' | DISPLAY="" /tmp/ibgateway.sh && \
+    rm /tmp/ibgateway.sh
 ADD scripts /opt/ibga/
 RUN chmod a+rx /opt/ibga/* && \
     mkdir -p /home/ibg_settings && \
     chown -R ibg:ibg /home/ibg /home/ibg_settings
+# Patch ibgateway.vmoptions for jauto
+RUN echo "-agentpath:/opt/jauto.so=/tmp/ibg-jauto.in" >> /home/ibg/Jts/ibgateway/ibgateway.vmoptions
 USER ibg
 WORKDIR /home/ibg
 EXPOSE 4000/tcp
