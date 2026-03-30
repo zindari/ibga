@@ -40,24 +40,30 @@ RUN curl -L "https://download2.interactivebrokers.com/installers/ibgateway/lates
 FROM debian:bookworm-slim@sha256:8af0e5095f9964007f5ebd11191dfe52dcb51bf3afa2c07f055fc5451b78ba0e
 USER root
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends ca-certificates curl sudo ed xvfb x11vnc x11-utils xdotool socat python3-websockify procps xfonts-scalable tzdata oathtool && \
+    apt-get install -y --no-install-recommends ca-certificates curl ed xvfb x11vnc x11-utils xdotool socat python3-websockify procps xfonts-scalable tzdata oathtool && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
-RUN useradd -ms /bin/bash -u 2000 ibg && \
-    adduser ibg sudo && \
-    echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+RUN useradd -ms /bin/bash -u 2000 ibg
 WORKDIR /opt
 RUN curl -L "https://github.com/novnc/noVNC/archive/refs/tags/v1.3.0.tar.gz" -o novnc.tar.gz && \
     tar xfz novnc.tar.gz && \
-    rm novnc.tar.gz
-USER ibg
-WORKDIR /home/ibg
+    rm novnc.tar.gz && \
+    chown -R ibg:ibg /opt/noVNC-1.3.0
+# Create pid/log directories writable by ibg
+RUN mkdir -p /var/run /var/log && \
+    chown ibg:ibg /var/run /var/log
+# Set permissions before switching to ibg
 COPY --from=util_build /tmp/utils/show_text /bin
 COPY --from=jauto_build /tmp/jauto_build/jauto.so /opt
+RUN chmod a+rx /bin/show_text && \
+    chmod a+rx /opt/jauto.so
 COPY --from=ibg_download /tmp/ibgateway.sh /home/ibg/ibgateway.sh
+RUN chown ibg:ibg /home/ibg/ibgateway.sh
 ADD scripts /opt/ibga/
-RUN sudo chmod a+rx /bin/show_text && \
-    sudo chmod a+rx /opt/jauto.so && \
-    sudo chmod a+rx /opt/ibga/*
+RUN chmod a+rx /opt/ibga/* && \
+    mkdir -p /home/ibg_settings && \
+    chown -R ibg:ibg /home/ibg /home/ibg_settings
+USER ibg
+WORKDIR /home/ibg
 EXPOSE 4000/tcp
-ENTRYPOINT /opt/ibga/manager.sh
+ENTRYPOINT ["/opt/ibga/manager.sh"]
