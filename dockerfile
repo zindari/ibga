@@ -28,7 +28,7 @@ RUN gcc show_text.c -O2 -lX11 -o show_text
 # Stage 3: Download IB Gateway installer at build time (not runtime)
 FROM debian:bookworm-slim@sha256:8af0e5095f9964007f5ebd11191dfe52dcb51bf3afa2c07f055fc5451b78ba0e AS ibg_download
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl && \
+    apt-get install -y --no-install-recommends curl ca-certificates && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 ARG IBG_ARCH=x64
