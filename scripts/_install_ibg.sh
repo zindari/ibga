@@ -39,9 +39,7 @@ MSG="----------------------------
 
     for (( i=5; i>0; i--)); do sleep 1 & wait; done
 
-    sudo mkdir -p {$IBG_DIR,$IBG_SETTINGS_DIR}
-    sudo chown ibg:ibg "$IBG_DIR"
-    sudo chown ibg:ibg "$IBG_SETTINGS_DIR"
+    mkdir -p $IBG_DIR $IBG_SETTINGS_DIR
     ex=$(_ibg_installer_exists)
     if [ "$ex" = true ]; then
         _info "• will use the existing installer: $IBG_DIR/$INSTALLER_FN ...\n"
@@ -52,7 +50,7 @@ MSG="----------------------------
         _info "• downloading from $URL ...\n"
         curl -L "$URL" -# -o $IBG_DIR/$INSTALLER_FN
         chmod +x $IBG_DIR/$INSTALLER_FN
-        sudo kill -SIGTERM $stpid
+        kill -SIGTERM $stpid
     fi
     show_text 1024 768 "Installing IBG ..." &
     local stpid="$!"
@@ -61,7 +59,7 @@ MSG="----------------------------
     rm -rf $IBG_DIR/Jts/
     rm -rf $IBG_DIR/$INSTALLER_FN.*
     printf '%s/Jts/ibgateway\n\n' "$IBG_DIR" | DISPLAY="" ./$INSTALLER_FN
-    sudo kill -SIGTERM $stpid
+    kill -SIGTERM $stpid
 
     ex=$(_ibg_exec_exists)
     if [ "$ex" = true ]; then

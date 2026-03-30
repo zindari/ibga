@@ -6,8 +6,8 @@ function _run_xvfb {
     CMD=/usr/bin/Xvfb
     ARGS="$DISPLAY -ac -screen 0 1024x768x16 +extension RANDR"
     _info "• starting xvfb ($CMD $ARGS) ...\n"
-    sudo /sbin/start-stop-daemon --start --pidfile $XVFB_PIDFILE --make-pidfile --background --exec $CMD -- $ARGS
-    XVFB_PID=$(_wait_for_pid $XVFB_PIDFILE)
+    $CMD $ARGS &
+    XVFB_PID=$!
     _info "  pid: $XVFB_PID\n"
     local SCREEN_READY=0
     local TIMER=0
@@ -26,7 +26,7 @@ function _run_xvfb {
         if [ $TIMER -gt 20 ]; then
             _err "    display timed out, will try again ...\n"
             _info "  stopping xvfb ...\n"
-            sudo /sbin/start-stop-daemon --stop --pidfile $XVFB_PIDFILE
+            kill $XVFB_PID 2>/dev/null
             # potential call stack overflow
             _run_xvfb
             return 0
@@ -46,17 +46,17 @@ function _run_vnc {
         ARGS="$ARGS -rfbauth $PWFILE"
     fi
     _info "• starting x11vnc ($CMD $ARGS) ...\n"
-    sudo /sbin/start-stop-daemon --start --pidfile $VNC_PIDFILE --make-pidfile --background --exec $CMD -- $ARGS
-    VNC_PID=$(_wait_for_pid $VNC_PIDFILE)
+    $CMD $ARGS &
+    VNC_PID=$!
     _info "  pid: $VNC_PID\n"
 }
 
 function _run_novnc {
     CMD=$NOVNC_DIR/utils/novnc_proxy
     ARGS="--listen 5800 --vnc localhost:5900"
-    echo "<html><head><meta http-equiv=\"refresh\" content=\"0; URL=/vnc.html?autoconnect=true&reconnect=true\"/></head></html>" | sudo tee $NOVNC_DIR/index.html 1>/dev/null
+    echo "<html><head><meta http-equiv=\"refresh\" content=\"0; URL=/vnc.html?autoconnect=true&reconnect=true\"/></head></html>" > $NOVNC_DIR/index.html
     _info "• starting novnc ($CMD $ARGS) ...\n"
-    sudo /sbin/start-stop-daemon --start --pidfile $NOVNC_PIDFILE --make-pidfile --background --exec $CMD -- $ARGS
-    NOVNC_PID=$(_wait_for_pid $NOVNC_PIDFILE)
+    $CMD $ARGS &
+    NOVNC_PID=$!
     _info "  pid: $NOVNC_PID\n"
 }
