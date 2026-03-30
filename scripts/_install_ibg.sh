@@ -50,7 +50,7 @@ MSG="----------------------------
         local stpid="$!"
         URL="$IBG_DOWNLOAD_URL"
         _info "• downloading from $URL ...\n"
-        curl -k "$URL" -# -o $IBG_DIR/$INSTALLER_FN
+        curl -L "$URL" -# -o $IBG_DIR/$INSTALLER_FN
         chmod +x $IBG_DIR/$INSTALLER_FN
         sudo kill -SIGTERM $stpid
     fi
