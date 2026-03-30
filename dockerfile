@@ -40,7 +40,7 @@ RUN curl -L "https://download2.interactivebrokers.com/installers/ibgateway/lates
 FROM debian:bookworm-slim@sha256:8af0e5095f9964007f5ebd11191dfe52dcb51bf3afa2c07f055fc5451b78ba0e
 USER root
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl sudo ed xvfb x11vnc x11-utils xdotool socat python3-websockify procps xfonts-scalable tzdata oathtool && \
+    apt-get install -y --no-install-recommends ca-certificates curl sudo ed xvfb x11vnc x11-utils xdotool socat python3-websockify procps xfonts-scalable tzdata oathtool && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 RUN useradd -ms /bin/bash -u 2000 ibg && \
