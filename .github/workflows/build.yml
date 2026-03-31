@@ -45,6 +45,8 @@ jobs:
           git clone https://x-access-token:${GITOPS_PAT}@github.com/zindari/gitops.git /tmp/gitops
           cd /tmp/gitops/apps/lyra/overlays/paper
           kustomize edit set image us-east1-docker.pkg.dev/zindari/docker/ibga:${SHORT_SHA}
+          cd /tmp/gitops/apps/lyra/overlays/live
+          kustomize edit set image us-east1-docker.pkg.dev/zindari/docker/ibga:${SHORT_SHA}
           cd /tmp/gitops
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
