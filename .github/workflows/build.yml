@@ -53,3 +53,16 @@ jobs:
           git add -A
           git diff --cached --quiet || git commit -m "chore: update ibga image tag to ${SHORT_SHA}"
           git push
+
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: projects/1040283015088/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+          service_account: github-actions@zindari.iam.gserviceaccount.com
+
+      - name: Sync ArgoCD
+        run: |
+          gcloud container clusters get-credentials zindari-cluster --zone us-east1-b --project zindari
+          kubectl patch application lyra-live -n argocd --type merge \
+            -p '{"operation":{"initiatedBy":{"username":"admin"},"sync":{"revision":"HEAD"}}}'
+          kubectl patch application lyra-paper -n argocd --type merge \
+            -p '{"operation":{"initiatedBy":{"username":"admin"},"sync":{"revision":"HEAD"}}}'
