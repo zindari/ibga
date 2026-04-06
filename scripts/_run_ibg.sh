@@ -767,7 +767,6 @@ function __maintenance_check_options {
     done
     local OUTPUT=$(_call_jauto "list_ui_components?window_type=dialog")
     readarray -t COMPONENTS <<< "$OUTPUT"
-    local NEXT_EDIT_IS_PORT=0
     local NEXT_SCROLLPANE_IS_CONTENT=0
     local CONTENT_X=0
     local CONTENT_Y=0
@@ -786,20 +785,6 @@ function __maintenance_check_options {
                     SETTINGS_CHANGED=1
                     _info "  - option check, unchecking ${PROPS['text']} for IB_READONLY: $IB_READONLY ...\n"
                     xdotool mousemove ${PROPS["mx"]} ${PROPS["my"]} click 1
-                    sleep 0.25
-                fi
-        elif    [ $NEXT_EDIT_IS_PORT -eq 0 ] && \
-                [ "${PROPS['F1']}" == "javax.swing.JLabel" ] && \
-                [ "${PROPS['text']}" == "Socket port" ]; then
-                NEXT_EDIT_IS_PORT=1
-        elif    [ $NEXT_EDIT_IS_PORT -eq 1 ] && \
-                [ "${PROPS['F1']}" == "javax.swing.JTextField" ] && \
-                [ "${PROPS['editable']}" == "y" ]; then
-                NEXT_EDIT_IS_PORT=2
-                if [ "${PROPS['text']}" != "$IBG_PORT" ]; then
-                    SETTINGS_CHANGED=1
-                    _info "  - option check, changing port from ${PROPS['text']} to $IBG_PORT ...\n"
-                    xdotool mousemove ${PROPS["mx"]} ${PROPS["my"]} click 1 key ctrl+a BackSpace type "$IBG_PORT"
                     sleep 0.25
                 fi
         elif    [ "${PROPS['F1']}" == "javax.swing.JCheckBox" ] && \

@@ -24,11 +24,11 @@ The `-d` argument tells Docker Compose to launch the container in the background
 
 If you followed [the default configuration](configuring.md#an-example-docker-compose-configuration-file) where `restart: unless-stopped` is set, the container will always be up with the host unless you manually shut down the container or Docker.
 
-In [the default configuration](configuring.md#an-example-docker-compose-configuration-file), two ports `15800` and `4000` are exposed:
+In [the default configuration](configuring.md#an-example-docker-compose-configuration-file), the following ports are exposed:
 
 | Port | Function | Note |
 | `15800` | Browser-based VNC client to inspect container running status. | Access via http://ip:15800/ in a browser. Made possible by <a href="https://novnc.com/" target="_blank">novnc</a> |
-| `4000` | IB API server port | IB Gateway listens directly on this port. |
+| `4001` / `4002` | IB API server port | `4001` for Live Trading, `4002` for Paper Trading — IB Gateway's defaults. |
 
 **When your container is up and running, it is a good time to pay attention to [security](../references/security.md). Understanding security is critical to keep you safe trading.**
 
