@@ -1,7 +1,6 @@
 HOME_DIR="/home/ibg"
 IBG_DIR="${IBG_DIR:-$HOME_DIR}"
 IBG_SETTINGS_DIR="${IBG_SETTINGS_DIR:-/home/ibg_settings}"
-IBG_PORT="${IBG_PORT:-4000}"
 IBG_EXEC=Jts/ibgateway/ibgateway
 ARCH=$(uname -m)
 if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
