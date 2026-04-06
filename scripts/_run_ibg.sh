@@ -796,10 +796,10 @@ function __maintenance_check_options {
                 [ "${PROPS['F1']}" == "javax.swing.JTextField" ] && \
                 [ "${PROPS['editable']}" == "y" ]; then
                 NEXT_EDIT_IS_PORT=2
-                if [ "${PROPS['text']}" != "$IBG_PORT_INTERNAL" ]; then
+                if [ "${PROPS['text']}" != "$IBG_PORT" ]; then
                     SETTINGS_CHANGED=1
-                    _info "  - option check, changing port from ${PROPS['text']} to $IBG_PORT_INTERNAL ...\n"
-                    xdotool mousemove ${PROPS["mx"]} ${PROPS["my"]} click 1 key ctrl+a BackSpace type "$IBG_PORT_INTERNAL"
+                    _info "  - option check, changing port from ${PROPS['text']} to $IBG_PORT ...\n"
+                    xdotool mousemove ${PROPS["mx"]} ${PROPS["my"]} click 1 key ctrl+a BackSpace type "$IBG_PORT"
                     sleep 0.25
                 fi
         elif    [ "${PROPS['F1']}" == "javax.swing.JCheckBox" ] && \

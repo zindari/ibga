@@ -8,7 +8,6 @@ fi
 source $(dirname "$BASH_SOURCE")/_env.sh
 source $(dirname "$BASH_SOURCE")/_utils.sh
 source $(dirname "$BASH_SOURCE")/_run_xv.sh
-source $(dirname "$BASH_SOURCE")/_run_socat.sh
 source $(dirname "$BASH_SOURCE")/_install_ibg.sh
 source $(dirname "$BASH_SOURCE")/_run_ibg.sh
 
@@ -23,7 +22,6 @@ _info "$MSG"
 _run_xvfb
 _run_vnc
 _run_novnc
-_run_socat
 
 SC_PATH="$(dirname $(readlink -f $0))"
 INSTALLED=''
