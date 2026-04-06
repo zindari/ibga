@@ -70,5 +70,6 @@ RUN chmod a+rx /opt/ibga/* && \
 RUN echo "-agentpath:/opt/jauto.so=/tmp/ibg-jauto.in" >> /home/ibg/Jts/ibgateway/ibgateway.vmoptions
 USER ibg
 WORKDIR /home/ibg
-EXPOSE 4000/tcp
+# IB Gateway API port: 4001 for Live Trading, 4002 for Paper Trading
+EXPOSE 4001/tcp 4002/tcp
 ENTRYPOINT ["/opt/ibga/manager.sh"]
