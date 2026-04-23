@@ -4,7 +4,14 @@ source $(dirname "$BASH_SOURCE")/_utils.sh
 
 function _run_xvfb {
     CMD=/usr/bin/Xvfb
-    ARGS="$DISPLAY -ac -screen 0 1024x768x16 +extension RANDR"
+    # IBKR's Configuration/API/Settings dialog is taller than 768px; at
+    # the old default the Apply/OK/Cancel buttons rendered off-screen,
+    # so the option-check could untick "Read-Only API" but the Apply
+    # click landed outside the virtual screen and the change never
+    # saved. Default is now large enough to fit the dialog; callers can
+    # override via IBGA_SCREEN_SIZE (e.g. "1600x1200x16").
+    local SCREEN_SIZE="${IBGA_SCREEN_SIZE:-1280x1024x16}"
+    ARGS="$DISPLAY -ac -screen 0 $SCREEN_SIZE +extension RANDR"
     _info "• starting xvfb ($CMD $ARGS) ...\n"
     $CMD $ARGS &
     XVFB_PID=$!
