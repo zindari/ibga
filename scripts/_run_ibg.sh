@@ -456,31 +456,49 @@ function __maintenance_handle_paper_trading_warning {
 
 
 function __maintenance_handle_general_warning {
-    local JAUTO_ARGS="list_ui_components?window_class=feature.messages.&window_type=dialog"
+    # Match any active dialog. The previous filter (window_class=feature.messages.)
+    # was too narrow: it missed both the daily auto-restart-considerations popup
+    # and the API write-access warning popup that fires every time IBGW rejects
+    # an order while Read-Only API is checked. Both popups have body text and
+    # a single dismiss button (OK or Close), no input fields, so we can safely
+    # auto-dismiss without risking login/auth dialogs.
+    local JAUTO_ARGS="list_ui_components?window_type=dialog&is_active=1"
     local DIALOGS=$(_call_jauto "$JAUTO_ARGS")
-    if [ "$DIALOGS" != "none" ]; then
-        OUTPUT=$(_call_jauto "$JAUTO_ARGS")
-        readarray -t COMPONENTS <<< "$OUTPUT"
-        local DIALOG_TEXT=''
-        local DIALOG_OK_X=0
-        local DIALOG_OK_Y=0
-        for COMPONENT in "${COMPONENTS[@]}"; do
-            local -A PROPS="$(_jauto_parse_props $COMPONENT)"
-            if  [ "${PROPS['F1']}" == "javax.swing.JTextPane" ] && \
+    if [ "$DIALOGS" == "none" ]; then return; fi
+    OUTPUT=$(_call_jauto "$JAUTO_ARGS")
+    readarray -t COMPONENTS <<< "$OUTPUT"
+    local DIALOG_TEXT=''
+    local DIALOG_OK_X=0 DIALOG_OK_Y=0
+    local DIALOG_CLOSE_X=0 DIALOG_CLOSE_Y=0
+    local HAS_INPUT=0
+    for COMPONENT in "${COMPONENTS[@]}"; do
+        local -A PROPS="$(_jauto_parse_props $COMPONENT)"
+        # Body text — auto-restart popup uses JTextPane, API write-access popup
+        # uses JLabel for its multi-line text.
+        if      ([ "${PROPS['F1']}" == "javax.swing.JTextPane" ] || \
+                 [ "${PROPS['F1']}" == "javax.swing.JLabel" ]) && \
                 [ ! -z "${PROPS['text']}" ]; then
-                DIALOG_TEXT+="${PROPS['text']}"
-            fi
-            if  [ "${PROPS['F1']}" == "javax.swing.JButton" ] && \
-                [ "${PROPS['text']}" == "OK" ]; then
-                DIALOG_OK_X="${PROPS['mx']}"
-                DIALOG_OK_Y="${PROPS['my']}"
-            fi
-        done
-        if  [ ${#DIALOG_TEXT} -gt 0 ]; then
-            _info "  - handle general warning: $DIALOG_TEXT\n"
-            _info "    clicking OK at $DIALOG_OK_X,$DIALOG_OK_Y ...\n"
-            xdotool mousemove $DIALOG_OK_X $DIALOG_OK_Y click 1
+                DIALOG_TEXT+="${PROPS['text']} "
+        # Editable input fields mark a login/auth/2FA dialog — never auto-dismiss.
+        elif    ([ "${PROPS['F1']}" == "javax.swing.JTextField" ] || \
+                 [ "${PROPS['F1']}" == "javax.swing.JPasswordField" ]) && \
+                [ "${PROPS['editable']}" == "y" ]; then
+                HAS_INPUT=1
+        elif    [ "${PROPS['F1']}" == "javax.swing.JButton" ]; then
+                case "${PROPS['text']}" in
+                    "OK")    DIALOG_OK_X=${PROPS['mx']}; DIALOG_OK_Y=${PROPS['my']} ;;
+                    "Close") DIALOG_CLOSE_X=${PROPS['mx']}; DIALOG_CLOSE_Y=${PROPS['my']} ;;
+                esac
         fi
+    done
+    # Bail out for input-having dialogs and dialogs without body text.
+    if [ $HAS_INPUT -eq 1 ] || [ ${#DIALOG_TEXT} -eq 0 ]; then return; fi
+    if   [ $DIALOG_OK_X -gt 0 ]; then
+         _info "  - dismissing info dialog via OK: $DIALOG_TEXT\n"
+         xdotool mousemove $DIALOG_OK_X $DIALOG_OK_Y click 1
+    elif [ $DIALOG_CLOSE_X -gt 0 ]; then
+         _info "  - dismissing info dialog via Close: $DIALOG_TEXT\n"
+         xdotool mousemove $DIALOG_CLOSE_X $DIALOG_CLOSE_Y click 1
     fi
 }
 
@@ -663,12 +681,12 @@ function __maintenance_handle_welcome {
 
 
 function __maintenance_check_options {
-    SKIP_CHECK="$IBG_SETTINGS_DIR/skip_option_check2"
-    if [ -f $SKIP_CHECK ]; then
-        _info "  - option check skipped, to perform again remove $SKIP_CHECK\n"
-        G_OPTION_ESSENTIAL_DONE=2
-        return
-    fi
+    # Run the option check on every gateway start so that IB_READONLY (and any
+    # other env-driven setting) is re-applied even if jts.ini drifted at runtime
+    # — e.g. after a manual VNC toggle or an IBKR-side default reset on update.
+    # Previously this was a one-shot guarded by skip_option_check2; that meant a
+    # single drift event could silently leave Read-Only API enabled until the
+    # next pod recreate.
     _info "  - option check, clicking menu Configure/Settings ...\n"
     _click_menu "Configure/Settings"
     # Location of OK, Apply, Cancel buttons, "API" item, "Lock and Exit" item
@@ -832,8 +850,6 @@ function __maintenance_check_options {
     else
         _info "  - option check, no settings change necessary.\n"
         xdotool mousemove $CANCEL_X $CANCEL_Y click 1
-        echo "remove this file to perform option check" > "$SKIP_CHECK"
-        _info "  - option check, created $SKIP_CHECK to skip future option check runs.\n"
     fi
     G_OPTION_ESSENTIAL_DONE=2
 }
@@ -889,6 +905,15 @@ function _maintenance_cycle {
             [ $G_WELCOME_MESSAGE_DONE -eq 2 ] && \
             [ $G_OPTION_ESSENTIAL_DONE -eq 0 ]; then
             __maintenance_check_options
+        fi
+        # Dismiss any transient info dialogs (auto-restart-considerations popup,
+        # API write-access warning popup, ...) on every cycle. Previously this
+        # only ran inside __maintenance_check_options, so popups that appeared
+        # after option-check completed would block the gateway UI thread until
+        # the next pod recreate.
+        if  [ $G_PAPER_TRADING_WARNING_DONE -eq 2 ] && \
+            [ $G_WELCOME_MESSAGE_DONE -eq 2 ]; then
+            __maintenance_handle_general_warning
         fi
         if  [ "$G_FATAL_ERROR" != "" ]; then
             _info "• breaking out of maintenance cycle due to fatal error: $G_FATAL_ERROR\n"
