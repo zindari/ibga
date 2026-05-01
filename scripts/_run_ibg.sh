@@ -456,13 +456,18 @@ function __maintenance_handle_paper_trading_warning {
 
 
 function __maintenance_handle_general_warning {
-    # Match any active dialog. The previous filter (window_class=feature.messages.)
-    # was too narrow: it missed both the daily auto-restart-considerations popup
-    # and the API write-access warning popup that fires every time IBGW rejects
-    # an order while Read-Only API is checked. Both popups have body text and
-    # a single dismiss button (OK or Close), no input fields, so we can safely
-    # auto-dismiss without risking login/auth dialogs.
-    local JAUTO_ARGS="list_ui_components?window_type=dialog&is_active=1"
+    # IBGW info popups (auto-restart-considerations, API write-access warning)
+    # all have window_title="IBKR Gateway" — distinct from the Settings dialog
+    # ("U... Trader Workstation Configuration") and from login/auth dialogs.
+    # Scoping by title prevents the multi-dialog conflation that bit #148:
+    # when Settings is open AND the popup appears, walking all dialog
+    # components saw Settings' editable text fields (Master API client ID,
+    # Logging Level dropdown, Component Exch. Separator, ...) and set
+    # HAS_INPUT=1, refusing to dismiss anything.
+    #
+    # Belt-and-suspenders: still skip if the matched dialog has any editable
+    # input field, in case a future "IBKR Gateway"-titled popup grows one.
+    local JAUTO_ARGS="list_ui_components?window_type=dialog&window_title=IBKR Gateway"
     local DIALOGS=$(_call_jauto "$JAUTO_ARGS")
     if [ "$DIALOGS" == "none" ]; then return; fi
     OUTPUT=$(_call_jauto "$JAUTO_ARGS")
@@ -494,10 +499,10 @@ function __maintenance_handle_general_warning {
     # Bail out for input-having dialogs and dialogs without body text.
     if [ $HAS_INPUT -eq 1 ] || [ ${#DIALOG_TEXT} -eq 0 ]; then return; fi
     if   [ $DIALOG_OK_X -gt 0 ]; then
-         _info "  - dismissing info dialog via OK: $DIALOG_TEXT\n"
+         _info "  - dismissing IBKR Gateway info dialog via OK: $DIALOG_TEXT\n"
          xdotool mousemove $DIALOG_OK_X $DIALOG_OK_Y click 1
     elif [ $DIALOG_CLOSE_X -gt 0 ]; then
-         _info "  - dismissing info dialog via Close: $DIALOG_TEXT\n"
+         _info "  - dismissing IBKR Gateway info dialog via Close: $DIALOG_TEXT\n"
          xdotool mousemove $DIALOG_CLOSE_X $DIALOG_CLOSE_Y click 1
     fi
 }
